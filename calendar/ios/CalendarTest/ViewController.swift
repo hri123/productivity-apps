@@ -12,15 +12,15 @@ class ViewController: UIViewController {
     
     // outlets and variables
     
-    var timerForRollForward : NSTimer = NSTimer()
+    var timerForRollForward : Timer = Timer()
     
     @IBOutlet weak var autoRollForwardStatus: UILabel!
     
     func createTimer() {
         
-        if (!self.timerForRollForward.valid) { // dont create a duplicate one
+        if (!self.timerForRollForward.isValid) { // dont create a duplicate one
             
-            self.timerForRollForward = NSTimer.scheduledTimerWithTimeInterval(5, target: self, selector: #selector(ViewController.moveEventsBy1Day), userInfo: nil, repeats: true)
+            self.timerForRollForward = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(ViewController.moveEventsBy1Day), userInfo: nil, repeats: true)
             
         }
         
@@ -28,12 +28,12 @@ class ViewController: UIViewController {
         
     }
 
-    @IBAction func startRollForward(sender: UIButton) {
+    @IBAction func startRollForward(_ sender: UIButton) {
         
         let eventStore = EKEventStore()
         
-        if (EKEventStore.authorizationStatusForEntityType(.Event) != EKAuthorizationStatus.Authorized) {
-            eventStore.requestAccessToEntityType(.Event, completion: {
+        if (EKEventStore.authorizationStatus(for: .event) != EKAuthorizationStatus.authorized) {
+            eventStore.requestAccess(to: .event, completion: {
                 granted, error in
                 
                 self.createTimer()
@@ -47,7 +47,7 @@ class ViewController: UIViewController {
 
     }
 
-    @IBAction func stopRollForward(sender: UIButton) {
+    @IBAction func stopRollForward(_ sender: UIButton) {
         
         timerForRollForward.invalidate()
         
@@ -61,45 +61,45 @@ class ViewController: UIViewController {
     }
     
     
-    @IBAction func testFunctionality(sender: UIButton) {
+    @IBAction func testFunctionality(_ sender: UIButton) {
         NSLog("Inside Test Function")
         
         let eventStore = EKEventStore()
-        let calendars = eventStore.calendarsForEntityType(.Event)
+        let calendars = eventStore.calendars(for: .event)
         
         for calendar in calendars {
             if calendar.title == "Work" {
                 
-                let oneMonthAgo = NSDate(timeIntervalSinceNow: -30*24*3600)
-                let oneMonthAfter = NSDate(timeIntervalSinceNow: +30*24*3600)
+                let oneMonthAgo = Date(timeIntervalSinceNow: -30*24*3600)
+                let oneMonthAfter = Date(timeIntervalSinceNow: +30*24*3600)
                 
-                let predicate = eventStore.predicateForEventsWithStartDate(oneMonthAgo, endDate: oneMonthAfter, calendars: [calendar])
+                let predicate = eventStore.predicateForEvents(withStart: oneMonthAgo, end: oneMonthAfter, calendars: [calendar])
                 
-                let events = eventStore.eventsMatchingPredicate(predicate)
+                let events = eventStore.events(matching: predicate)
                 
                 for event in events {
                     NSLog(event.title)
-                    NSLog("%@", event.startDate)
-                    NSLog("%@", event.endDate)
+                    // NSLog("%@", event.startDate)
+                    // NSLog("%@", event.endDate)
                     
-                    event.startDate = NSCalendar.currentCalendar()
-                        .dateByAddingUnit(
-                            .Day,
+                    event.startDate = (Calendar.current as NSCalendar)
+                        .date(
+                            byAdding: .day,
                             value: 1,
-                            toDate: event.startDate,
+                            to: event.startDate,
                             options: []
                     )!
                     
-                    event.endDate = NSCalendar.currentCalendar()
-                        .dateByAddingUnit(
-                            .Day,
+                    event.endDate = (Calendar.current as NSCalendar)
+                        .date(
+                            byAdding: .day,
                             value: 1,
-                            toDate: event.endDate,
+                            to: event.endDate,
                             options: []
                     )!
                     
                     do {
-                        try eventStore.saveEvent(event, span: .ThisEvent, commit: true)
+                        try eventStore.save(event, span: .thisEvent, commit: true)
                     } catch let specError as NSError {
                         print("A specific error occurred: \(specError)")
                     } catch {
@@ -128,7 +128,7 @@ class ViewController: UIViewController {
     
     // Creates an event in the EKEventStore. The method assumes the eventStore is created and 
     // accessible
-    func createEvent(eventStore: EKEventStore, title: String, startDate: NSDate, endDate: NSDate) {
+    func createEvent(_ eventStore: EKEventStore, title: String, startDate: Date, endDate: Date) {
         let event = EKEvent(eventStore: eventStore)
         
         event.title = title
@@ -136,7 +136,7 @@ class ViewController: UIViewController {
         event.endDate = endDate
         event.calendar = eventStore.defaultCalendarForNewEvents
         do {
-            try eventStore.saveEvent(event, span: .ThisEvent)
+            try eventStore.save(event, span: .thisEvent)
             savedEventId = event.eventIdentifier
         } catch {
             print("Bad things happened")
@@ -145,11 +145,11 @@ class ViewController: UIViewController {
     
     // Removes an event from the EKEventStore. The method assumes the eventStore is created and
     // accessible
-    func deleteEvent(eventStore: EKEventStore, eventIdentifier: String) {
-        let eventToRemove = eventStore.eventWithIdentifier(eventIdentifier)
+    func deleteEvent(_ eventStore: EKEventStore, eventIdentifier: String) {
+        let eventToRemove = eventStore.event(withIdentifier: eventIdentifier)
         if (eventToRemove != nil) {
             do {
-                try eventStore.removeEvent(eventToRemove!, span: .ThisEvent)
+                try eventStore.remove(eventToRemove!, span: .thisEvent)
             } catch {
                 print("Bad things happened")
             }
@@ -158,15 +158,15 @@ class ViewController: UIViewController {
     
     // Responds to button to add event. This checks that we have permission first, before adding the
     // event
-    @IBAction func addEvent(sender: UIButton) {
+    @IBAction func addEvent(_ sender: UIButton) {
         
         let eventStore = EKEventStore()
         
-        let startDate = NSDate()
-        let endDate = startDate.dateByAddingTimeInterval(60 * 60) // One hour
+        let startDate = Date()
+        let endDate = startDate.addingTimeInterval(60 * 60) // One hour
         
-        if (EKEventStore.authorizationStatusForEntityType(.Event) != EKAuthorizationStatus.Authorized) {
-            eventStore.requestAccessToEntityType(.Event, completion: {
+        if (EKEventStore.authorizationStatus(for: .event) != EKAuthorizationStatus.authorized) {
+            eventStore.requestAccess(to: .event, completion: {
                 granted, error in
                 self.createEvent(eventStore, title: "DJ's Test Event", startDate: startDate, endDate: endDate)
             })
@@ -178,11 +178,11 @@ class ViewController: UIViewController {
 
     // Responds to button to remove event. This checks that we have permission first, before removing the
     // event
-    @IBAction func removeEvent(sender: UIButton) {
+    @IBAction func removeEvent(_ sender: UIButton) {
         let eventStore = EKEventStore()
         
-        if (EKEventStore.authorizationStatusForEntityType(.Event) != EKAuthorizationStatus.Authorized) {
-            eventStore.requestAccessToEntityType(.Event, completion: { (granted, error) -> Void in
+        if (EKEventStore.authorizationStatus(for: .event) != EKAuthorizationStatus.authorized) {
+            eventStore.requestAccess(to: .event, completion: { (granted, error) -> Void in
                 self.deleteEvent(eventStore, eventIdentifier: self.savedEventId)
             })
         } else {
