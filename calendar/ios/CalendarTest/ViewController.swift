@@ -20,7 +20,7 @@ class ViewController: UIViewController {
         
         if (!self.timerForRollForward.isValid) { // dont create a duplicate one
             
-            self.timerForRollForward = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(ViewController.moveEventsBy1Day), userInfo: nil, repeats: true)
+            self.timerForRollForward = Timer.scheduledTimer(timeInterval: 60, target: self, selector: #selector(ViewController.moveEventsBy1Day), userInfo: nil, repeats: true)
             
         }
         
@@ -124,6 +124,9 @@ class ViewController: UIViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
+    
+    // Unused functions
 
     
     // Creates an event in the EKEventStore. The method assumes the eventStore is created and 
